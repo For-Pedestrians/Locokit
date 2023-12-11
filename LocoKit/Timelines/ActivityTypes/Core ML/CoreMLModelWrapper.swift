@@ -17,10 +17,20 @@ import CreateML
 
 public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable {
 
-    static let modelMaxTrainingSamples = 150_000
-    static let modelMinTrainingSamplesDepth2 = 50_000 // for completenessScore
-    static let modelMinTrainingSamplesDepth1 = 100_000 // for completenessScore
-    static let modelMinTrainingSamplesDepth0 = 150_000 // for completenessScore
+    // [Depth: Samples]
+    static let modelMaxTrainingSamples: [Int: Int] = [
+        2: 110_000,
+        1: 160_000,
+        0: 260_000
+    ]
+
+    // for completenessScore
+    // [Depth: Samples]
+    static let modelMinTrainingSamples: [Int: Int] = [
+        2: 100_000,
+        1: 150_000,
+        0: 250_000
+    ]
 
     static let numberOfLatBucketsDepth0 = 18
     static let numberOfLongBucketsDepth0 = 36
@@ -238,12 +248,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     }
 
     public var completenessScore: Double {
-        switch depth {
-            case 0: return min(1.0, Double(totalSamples) / Double(Self.modelMinTrainingSamplesDepth0))
-            case 1: return min(1.0, Double(totalSamples) / Double(Self.modelMinTrainingSamplesDepth1))
-            case 2: return min(1.0, Double(totalSamples) / Double(Self.modelMinTrainingSamplesDepth2))
-            default: return 0.0
-        }
+        return min(1.0, Double(totalSamples) / Double(Self.modelMinTrainingSamples[depth]!))
     }
 
     // MARK: - Core ML classifying
@@ -323,7 +328,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
 
                 let start = Date()
                 let samples = self.fetchTrainingSamples()
-                print("buildModel() SAMPLES BATCH: \(samples.count), duration: \(start.age)")
+                logger.info("UPDATING: \(self.geoKey), SAMPLES BATCH: \(samples.count), duration: \(start.age)")
 
                 let (url, samplesAdded, typesAdded) = try self.exportCSV(samples: samples, appendingTo: csvFile)
                 csvFile = url
@@ -340,7 +345,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
                     return
                 }
 
-                print("buildModel() FINISHED WRITING CSV FILE")
+                logger.info("UPDATING: \(self.geoKey), FINISHED WRITING CSV FILE")
 
                 guard let csvFile else {
                     logger.error("Missing CSV file for model build.")
@@ -388,17 +393,26 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     private func fetchTrainingSamples() -> [PersistentSample] {
         store.connectToDatabase()
         let rect = CoordinateRect(latitudeRange: latitudeRange, longitudeRange: longitudeRange)
-        return store.samples(
-            inside: rect,
-            where: """
-                    unlikely(confirmedType IS NOT NULL)
-                    AND likely(xyAcceleration IS NOT NULL)
-                    AND likely(zAcceleration IS NOT NULL)
-                    AND likely(stepHz IS NOT NULL)
+        if depth == 0 {
+            return store.samples(
+                where: """
+                    confirmedType IS NOT NULL
                     ORDER BY lastSaved DESC
                     LIMIT ?
                 """,
-            arguments: [Self.modelMaxTrainingSamples]
+                arguments: [Self.modelMaxTrainingSamples[depth]!],
+                explain: true
+            )
+        }
+        return store.samples(
+            inside: rect,
+            where: """
+                    confirmedType IS NOT NULL
+                    ORDER BY lastSaved DESC
+                    LIMIT ?
+                """,
+            arguments: [Self.modelMaxTrainingSamples[depth]!],
+            explain: true
         )
     }
 
