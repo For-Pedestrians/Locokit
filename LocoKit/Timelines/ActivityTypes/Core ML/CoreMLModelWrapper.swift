@@ -19,9 +19,9 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
 
     // [Depth: Samples]
     static let modelMaxTrainingSamples: [Int: Int] = [
-        2: 110_000,
-        1: 160_000,
-        0: 260_000
+        2: 130_000,
+        1: 180_000,
+        0: 250_000
     ]
 
     // for completenessScore
@@ -29,7 +29,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     static let modelMinTrainingSamples: [Int: Int] = [
         2: 100_000,
         1: 150_000,
-        0: 250_000
+        0: 200_000
     ]
 
     static let numberOfLatBucketsDepth0 = 18
@@ -75,6 +75,26 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
         self.init(dict: dict, in: store)
 
         updateTheModel()
+    }
+    
+    convenience init(bundledURL: URL, in store: TimelineStore) {
+        let coordinate = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+        let latitudeRange = Self.latitudeRangeFor(depth: 0, coordinate: coordinate)
+        let longitudeRange = Self.longitudeRangeFor(depth: 0, coordinate: coordinate)
+
+        let dict: [String: Any] = [
+            "depth": 0,
+            "geoKey": "BD0 0.00,0.00",
+            "latitudeMin": latitudeRange.min,
+            "latitudeMax": latitudeRange.max,
+            "longitudeMin": longitudeRange.min,
+            "longitudeMax": longitudeRange.max,
+        ]
+
+        self.init(dict: dict, in: store)
+
+        self.filename = bundledURL.lastPathComponent
+        self.needsUpdate = false
     }
 
     public init(dict: [String: Any?], in store: TimelineStore) {
@@ -130,9 +150,9 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
 
     // MARK: - MLModel loading
 
-    private lazy var model: CoreML.MLModel? = {
+    private lazy var model: MLModel? = {
         do {
-            return try mutex.sync { try CoreML.MLModel(contentsOf: modelURL) }
+            return try mutex.sync { try MLModel(contentsOf: modelURL) }
         } catch {
             logger.error("ERROR: \(error)")
             if !needsUpdate {
@@ -145,11 +165,14 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     }()
 
     public var modelURL: URL {
+        if filename.hasPrefix("B") {
+            return Bundle.main.url(forResource: filename, withExtension: nil)!
+        }
         return store.modelsDir.appendingPathComponent(filename)
     }
 
     public func reloadModel() throws {
-        try mutex.sync { self.model = try CoreML.MLModel(contentsOf: modelURL) }
+        try mutex.sync { self.model = try MLModel(contentsOf: modelURL) }
     }
 
     static func latitudeRangeFor(depth: Int, coordinate: CLLocationCoordinate2D) -> (min: Double, max: Double) {
@@ -265,6 +288,8 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     // MARK: - Saving
 
     public func save() {
+        if geoKey.hasPrefix("B") { return }
+
         do {
             try store.auxiliaryPool.write { db in
                 self.transactionDate = Date()
@@ -309,6 +334,8 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     // MARK: - Model building
 
     public func updateTheModel(task: BGProcessingTask? = nil, currentClassifier classifier: ActivityClassifier? = nil) {
+        if geoKey.hasPrefix("B") { return }
+
         CoreMLModelUpdater.highlander.updatesQueue.addOperation {
             defer {
                 if let task {
@@ -368,7 +395,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
                 try classifier.write(to: tempModelFile)
 
                 // compile the model
-                let compiledModelFile = try CoreML.MLModel.compileModel(at: tempModelFile)
+                let compiledModelFile = try MLModel.compileModel(at: tempModelFile)
 
                 // save model to final dest
                 _ = try manager.replaceItemAt(self.modelURL, withItemAt: compiledModelFile)
@@ -397,6 +424,9 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
             return store.samples(
                 where: """
                     confirmedType IS NOT NULL
+                    AND likely(xyAcceleration IS NOT NULL)
+                    AND likely(zAcceleration IS NOT NULL)
+                    AND likely(stepHz IS NOT NULL)
                     ORDER BY lastSaved DESC
                     LIMIT ?
                 """,
@@ -408,6 +438,9 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
             inside: rect,
             where: """
                     confirmedType IS NOT NULL
+                    AND likely(xyAcceleration IS NOT NULL)
+                    AND likely(zAcceleration IS NOT NULL)
+                    AND likely(stepHz IS NOT NULL)
                     ORDER BY lastSaved DESC
                     LIMIT ?
                 """,
