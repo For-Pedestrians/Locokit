@@ -22,6 +22,8 @@ public enum ActivityTypeName: String, Codable {
     // base types
     case stationary
     case walking
+    case running
+    case car
 
     public var displayName: String {
         return rawValue.capitalized
@@ -30,7 +32,7 @@ public enum ActivityTypeName: String, Codable {
     // MARK: - Convenience Arrays
     
     /// A convenience array containing the base activity types.
-    public static let baseTypes = [stationary, walking]
+    public static let baseTypes = [stationary, walking, running, car]
 
     /// A convenience array containing the extended transport types.
     public static let extendedTypes = [bogus]
@@ -39,6 +41,6 @@ public enum ActivityTypeName: String, Codable {
     public static let allTypes = baseTypes + extendedTypes
 
     /// Activity types that can sensibly have related step counts
-    public static let stepsTypes = [walking]
+    public static let stepsTypes = [walking, running]
 
 }
