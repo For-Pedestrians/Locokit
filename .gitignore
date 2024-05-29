@@ -9,5 +9,5 @@ metadata
 report.xml
 *.log
 tags
-build
+*.build
 .DS_Store
