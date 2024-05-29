@@ -168,7 +168,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
         if filename.hasPrefix("B") {
             return Bundle.main.url(forResource: filename, withExtension: nil)!
         }
-        return store.modelsDir.appendingPathComponent(filename)
+        return store.modelsDir.appendingPathComponent("ForPedestriansClassifier.mlmodelc")
     }
 
     public func reloadModel() throws {
@@ -250,7 +250,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     public func classify(_ classifiable: ActivityTypeClassifiable, previousResults: ClassifierResults?) -> ClassifierResults {
         guard let model else {
             totalSamples = 0 // if file used to exist, sample count will be wrong and will cause incorrect weighting
-            print("[\(geoKey)] classify(classifiable:) NO MODEL!")
+            print("[\(geoKey)] classify(classifiable:) NO MODEL! - local version")
             return ClassifierResults(results: [], moreComing: false)
         }
         let input = classifiable.coreMLFeatureProvider

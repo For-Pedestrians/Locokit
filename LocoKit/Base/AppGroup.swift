@@ -180,11 +180,11 @@ public class AppGroup {
     // MARK: - Interfaces
 
     public enum AppName: String, CaseIterable, Codable {
-        case arcV3, arcMini, arcV4
+        case arcV3, forPedestrians, arcV4
         public var sortIndex: Int {
             switch self {
             case .arcV3: return 0
-            case .arcMini: return 1
+            case .forPedestrians: return 1
             case .arcV4: return 2
             }
         }
