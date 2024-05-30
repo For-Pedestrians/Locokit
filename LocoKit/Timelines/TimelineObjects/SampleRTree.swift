@@ -15,7 +15,7 @@ struct SampleRTree: MutablePersistableRecord, Encodable {
     var lonMin: Double
     var lonMax: Double
 
-    mutating func didInsert(with rowID: Int64, for column: String?) {
-        self.id = rowID
+    mutating func didInsert(_ inserted: InsertionSuccess) {
+        self.id = inserted.rowID
     }
 }
