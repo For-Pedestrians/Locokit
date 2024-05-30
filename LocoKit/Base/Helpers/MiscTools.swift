@@ -52,9 +52,17 @@ public extension DateInterval {
     }
 }
 
+public extension Calendar {
+    func previousDay(from date: Date) -> Date { self.date(byAdding: .day, value: -1, to: date)! }
+    func nextDay(from date: Date) -> Date { self.date(byAdding: .day, value: 1, to: date)! }
+}
+
 public extension Date {
     var age: TimeInterval { return -timeIntervalSinceNow }
+    func nextDay(in calendar: Calendar = Calendar.current) -> Date { calendar.nextDay(from: self) }
+    func previousDay(in calendar: Calendar = Calendar.current) -> Date { calendar.previousDay(from: self) }
     func startOfDay(in calendar: Calendar = Calendar.current) -> Date { calendar.startOfDay(for: self) }
+    func endOfDay(in calendar: Calendar = Calendar.current) -> Date { nextDay(in: calendar).startOfDay(in: calendar) }
     func sinceStartOfDay(in calendar: Calendar = Calendar.current) -> TimeInterval { timeIntervalSince(startOfDay(in: calendar)) }
     var startOfDay: Date { return Calendar.current.startOfDay(for: self) }
     var sinceStartOfDay: TimeInterval { return self.timeIntervalSince(self.startOfDay) }
