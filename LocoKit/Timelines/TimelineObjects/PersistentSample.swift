@@ -26,6 +26,10 @@ open class PersistentSample: LocomotionSample, TimelineObject {
         timelineItem?.invalidate()
     }
 
+    public override var secondsFromGMT: Int? {
+        didSet { if oldValue != secondsFromGMT { hasChanges = true } }
+    }
+
     internal override var _classifiedType: ActivityTypeName? {
         didSet { if oldValue != _classifiedType { hasChanges = true } }
     }
