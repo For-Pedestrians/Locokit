@@ -59,8 +59,12 @@ public extension Calendar {
 
 public extension Date {
     var age: TimeInterval { return -timeIntervalSinceNow }
+    func isToday(in calendar: Calendar = Calendar.current) -> Bool { calendar.isDateInToday(self) }
+    func isYesterday(in calendar: Calendar = Calendar.current) -> Bool { calendar.isDateInYesterday(self) }
+    func isTomorrow(in calendar: Calendar = Calendar.current) -> Bool { calendar.isDateInTomorrow(self) }
     func nextDay(in calendar: Calendar = Calendar.current) -> Date { calendar.nextDay(from: self) }
     func previousDay(in calendar: Calendar = Calendar.current) -> Date { calendar.previousDay(from: self) }
+    func nextWeek(in calendar: Calendar = Calendar.current) -> Date { calendar.date(byAdding: .weekOfYear, value: 1, to: self)! }
     func startOfDay(in calendar: Calendar = Calendar.current) -> Date { calendar.startOfDay(for: self) }
     func endOfDay(in calendar: Calendar = Calendar.current) -> Date { nextDay(in: calendar).startOfDay(in: calendar) }
     func sinceStartOfDay(in calendar: Calendar = Calendar.current) -> TimeInterval { timeIntervalSince(startOfDay(in: calendar)) }
