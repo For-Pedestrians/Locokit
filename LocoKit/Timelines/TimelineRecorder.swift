@@ -138,6 +138,7 @@ public class TimelineRecorder: ObservableObject {
     public private(set) var currentItem: TimelineItem? {
         get {
             if let item = _currentItem, !item.invalidated { return item }
+            store.connectToDatabase()
             _currentItem = store.mostRecentItem
             return _currentItem
         }
