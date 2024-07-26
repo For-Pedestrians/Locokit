@@ -23,27 +23,12 @@ public enum CoreMotionActivityTypeName: String, Codable {
     case stationary
 
     /**
-     Equivalent to the `automotive` property on a `CMMotionActivity`.
-     */
-    case automotive
-
-    /**
      Equivalent to the `walking` property on a `CMMotionActivity`.
      */
     case walking
 
     /**
-     Equivalent to the `running` property on a `CMMotionActivity`.
-     */
-    case running
-
-    /**
-     Equivalent to the `cycling` property on a `CMMotionActivity`.
-     */
-    case cycling
-
-    /**
      A convenience array containing all type names.
      */
-    public static let allTypes = [stationary, automotive, walking, running, cycling, unknown]
+    public static let allTypes = [stationary, walking, unknown]
 }

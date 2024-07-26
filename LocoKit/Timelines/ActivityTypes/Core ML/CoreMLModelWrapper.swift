@@ -13,7 +13,9 @@ import BackgroundTasks
 import Upsurge
 import GRDB
 import os.log
+#if !targetEnvironment(simulator)
 import CreateML
+#endif
 
 public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable {
 
@@ -332,7 +334,11 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
     }
 
     // MARK: - Model building
-
+    #if targetEnvironment(simulator)
+    public func updateTheModel(task: BGProcessingTask? = nil, currentClassifier classifier: ActivityClassifier? = nil) {
+        logger.info("SIMULATOR DOESN'T SUPPORT MODEL UPDATES")
+    }
+    #else
     public func updateTheModel(task: BGProcessingTask? = nil, currentClassifier classifier: ActivityClassifier? = nil) {
         if geoKey.hasPrefix("B") { return }
 
@@ -416,6 +422,7 @@ public class CoreMLModelWrapper: DiscreteClassifier, PersistableRecord, Hashable
             }
         }
     }
+    #endif
 
     private func fetchTrainingSamples() -> [PersistentSample] {
         store.connectToDatabase()
