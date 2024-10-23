@@ -301,6 +301,69 @@ public extension TimelineStore {
                 columns: ["lastSaved", "confirmedType"]
             )
         }
+
+        migrator.registerMigration("LocomotionSample dateRange triggers") { db in
+            // update startDate and endDate on sample insert
+            try db.execute(sql: """
+                CREATE TRIGGER LocomotionSample_INSERT_TimelineItem_DateRangeOnAssign
+                AFTER INSERT ON LocomotionSample
+                WHEN NEW.timelineItemId IS NOT NULL
+                BEGIN
+                    UPDATE TimelineItem
+                    SET startDate = (
+                        SELECT MIN(date)
+                        FROM LocomotionSample
+                        WHERE timelineItemId = NEW.timelineItemId
+                    ),
+                    endDate = (
+                        SELECT MAX(date)
+                        FROM LocomotionSample
+                        WHERE timelineItemId = NEW.timelineItemId
+                    )
+                    WHERE itemId = NEW.timelineItemId;
+                END;
+                """)
+            // update startDate and endDate on sample assign
+            try db.execute(sql: """
+                CREATE TRIGGER LocomotionSample_UPDATE_TimelineItem_DateRangeOnAssign
+                AFTER UPDATE OF timelineItemId ON LocomotionSample
+                WHEN NEW.timelineItemId IS NOT NULL AND (OLD.timelineItemId IS NULL OR OLD.timelineItemId != NEW.timelineItemId)
+                BEGIN
+                    UPDATE TimelineItem
+                    SET startDate = (
+                        SELECT MIN(date)
+                        FROM LocomotionSample
+                        WHERE timelineItemId = NEW.timelineItemId
+                    ),
+                    endDate = (
+                        SELECT MAX(date)
+                        FROM LocomotionSample
+                        WHERE timelineItemId = NEW.timelineItemId
+                    )
+                    WHERE itemId = NEW.timelineItemId;
+                END;
+                """)
+            // update startDate and endDate on sample unassign
+            try db.execute(sql: """
+                CREATE TRIGGER LocomotionSample_UPDATE_TimelineItem_DateRangeOnUnassign
+                AFTER UPDATE OF timelineItemId ON LocomotionSample
+                WHEN OLD.timelineItemId IS NOT NULL AND (NEW.timelineItemId IS NULL OR OLD.timelineItemId != NEW.timelineItemId)
+                BEGIN
+                    UPDATE TimelineItem
+                    SET startDate = (
+                        SELECT MIN(date)
+                        FROM LocomotionSample
+                        WHERE timelineItemId = OLD.timelineItemId
+                    ),
+                    endDate = (
+                        SELECT MAX(date)
+                        FROM LocomotionSample
+                        WHERE timelineItemId = OLD.timelineItemId
+                    )
+                    WHERE itemId = OLD.timelineItemId;
+                END;
+                """)
+        }
     }
 
 }
