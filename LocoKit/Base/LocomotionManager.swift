@@ -1005,14 +1005,14 @@ import CoreLocation
         locationManagerDelegate?.locationManager?(manager, didExitRegion: region)
     }
     
-    public func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+    public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
 
         // broadcast a notification
-        let note = Notification(name: .didChangeAuthorizationStatus, object: self, userInfo: ["status": status])
+        let note = Notification(name: .didChangeAuthorizationStatus, object: self, userInfo: ["status": manager.authorizationStatus])
         NotificationCenter.default.post(note)
 
         // forward the delegate event
-        locationManagerDelegate?.locationManager?(manager, didChangeAuthorization: status)
+        locationManagerDelegate?.locationManagerDidChangeAuthorization?(manager)
     }
 
     public func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
