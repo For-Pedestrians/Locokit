@@ -313,12 +313,12 @@ public extension TimelineStore {
                     SET startDate = (
                         SELECT MIN(date)
                         FROM LocomotionSample
-                        WHERE timelineItemId = NEW.timelineItemId
+                        WHERE timelineItemId = NEW.timelineItemId AND LocomotionSample.disabled = TimelineItem.disabled
                     ),
                     endDate = (
                         SELECT MAX(date)
                         FROM LocomotionSample
-                        WHERE timelineItemId = NEW.timelineItemId
+                        WHERE timelineItemId = NEW.timelineItemId AND LocomotionSample.disabled = TimelineItem.disabled
                     )
                     WHERE itemId = NEW.timelineItemId;
                 END;
@@ -333,12 +333,12 @@ public extension TimelineStore {
                     SET startDate = (
                         SELECT MIN(date)
                         FROM LocomotionSample
-                        WHERE timelineItemId = NEW.timelineItemId
+                        WHERE timelineItemId = NEW.timelineItemId AND LocomotionSample.disabled = TimelineItem.disabled
                     ),
                     endDate = (
                         SELECT MAX(date)
                         FROM LocomotionSample
-                        WHERE timelineItemId = NEW.timelineItemId
+                        WHERE timelineItemId = NEW.timelineItemId AND LocomotionSample.disabled = TimelineItem.disabled
                     )
                     WHERE itemId = NEW.timelineItemId;
                 END;
@@ -353,12 +353,12 @@ public extension TimelineStore {
                     SET startDate = (
                         SELECT MIN(date)
                         FROM LocomotionSample
-                        WHERE timelineItemId = OLD.timelineItemId
+                        WHERE timelineItemId = OLD.timelineItemId AND LocomotionSample.disabled = TimelineItem.disabled
                     ),
                     endDate = (
                         SELECT MAX(date)
                         FROM LocomotionSample
-                        WHERE timelineItemId = OLD.timelineItemId
+                        WHERE timelineItemId = OLD.timelineItemId AND LocomotionSample.disabled = TimelineItem.disabled
                     )
                     WHERE itemId = OLD.timelineItemId;
                 END;
