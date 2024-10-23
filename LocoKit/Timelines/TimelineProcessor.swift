@@ -914,4 +914,66 @@ public class TimelineProcessor {
         store.save()
     }
 
+    public static func backfillMissingStartEndDates(in store: TimelineStore) {
+        store.connectToDatabase()
+        guard let pool = store.pool else { return }
+        let query = """
+            UPDATE TimelineItem
+                SET startDate = (
+                    SELECT MIN(date)
+                    FROM LocomotionSample
+                    WHERE timelineItemId = TimelineItem.itemId
+                    AND LocomotionSample.disabled = TimelineItem.disabled
+                ),
+                endDate = (
+                    SELECT MAX(date)
+                    FROM LocomotionSample
+                    WHERE timelineItemId = TimelineItem.itemId
+                    AND LocomotionSample.disabled = TimelineItem.disabled
+                )
+            WHERE deleted = 0 AND disabled = 0 AND startDate IS NULL
+        """
+        do {
+            let changeCount = try pool.write { db in
+                try db.execute(sql: query)
+                return db.changesCount
+            }
+            if changeCount > 0 {
+                print("backfillMissingStartEndDates() updated: \(changeCount)")
+            }
+        } catch {
+            logger.error("\(error.localizedDescription)")
+        }
+    }
+
+    public static func softDeleteChildlessItems(in store: TimelineStore) {
+        store.connectToDatabase()
+        guard let pool = store.pool else { return }
+        let query = """
+            UPDATE TimelineItem
+            SET deleted = 1
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM LocomotionSample
+                WHERE LocomotionSample.timelineItemId = TimelineItem.itemId
+                LIMIT 1
+            )
+            AND nextItemId IS NULL
+            AND previousItemId IS NULL
+            AND deleted = 0
+            AND disabled = 0
+            LIMIT 500
+        """
+        do {
+            let deletedCount = try pool.write { db in
+                try db.execute(sql: query)
+                return db.changesCount
+            }
+            if deletedCount > 0 {
+                print("softDeleteChildlessItems() deleted: \(deletedCount)")
+            }
+        } catch {
+            logger.error("\(error.localizedDescription)")
+        }
+    }
 }
