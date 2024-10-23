@@ -128,20 +128,17 @@ open class Path: TimelineItem, CustomStringConvertible {
         return nil
     }
 
-    private func distance(from visit: Visit) -> CLLocationDistance? { return visit.distance(from: self) }
-    
+    private func distance(from visit: Visit) -> CLLocationDistance? {
+        return visit.distance(from: self)
+    }
+
     private func distance(from otherPath: Path) -> CLLocationDistance? {
-        guard let myStart = startDate, let theirStart = otherPath.startDate else { return nil }
-        if myStart < theirStart {
-            if let myEdge = samplesMatchingDisabled.last, let theirEdge = otherPath.samplesMatchingDisabled.first {
-                return myEdge.distance(from: theirEdge)
-            }
-        } else {
-            if let myEdge = samplesMatchingDisabled.first, let theirEdge = otherPath.samplesMatchingDisabled.last {
-                return myEdge.distance(from: theirEdge)
-            }
+        guard let myEdge = self.edgeSample(with: otherPath, requireEdgeLink: false, requireLocation: true),
+              let theirEdge = otherPath.edgeSample(with: self, requireEdgeLink: false, requireLocation: true) else {
+            return nil
         }
-        return nil
+
+        return myEdge.distance(from: theirEdge)
     }
 
     public override func contains(_ location: CLLocation, sd: Double?) -> Bool {
@@ -239,7 +236,7 @@ open class Path: TimelineItem, CustomStringConvertible {
 
         // no stealing between incompatible sources
         guard otherPath.source == self.source else { return nil }
-
+        
         // edge cleansing isn't allowed to push a path into invalid state
         guard otherPath.samples.count > Path.minimumValidSamples else { return nil }
 
@@ -312,4 +309,3 @@ open class Path: TimelineItem, CustomStringConvertible {
     }
 
 }
-

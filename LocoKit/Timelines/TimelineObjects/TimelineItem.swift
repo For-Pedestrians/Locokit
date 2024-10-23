@@ -272,6 +272,14 @@ open class TimelineItem: TimelineObject, Hashable, Comparable, Codable, Identifi
         return _dateRange
     }
 
+    public var unlinkedDateRange: DateInterval? {
+        guard let startDate = samplesMatchingDisabled.first?.date,
+              let endDate = samplesMatchingDisabled.last?.date else {
+            return nil
+        }
+        return DateInterval(start: startDate, end: endDate)
+    }
+
     public var startDate: Date? { return dateRange?.start }
     public var endDate: Date? { return dateRange?.end }
     public var duration: TimeInterval { return dateRange?.duration ?? 0 }
@@ -498,31 +506,47 @@ open class TimelineItem: TimelineObject, Hashable, Comparable, Codable, Identifi
      - Note: A negative value indicates overlapping items, and thus the duration of their overlap.
      */
     public func timeInterval(from otherItem: TimelineItem) -> TimeInterval? {
-        guard let myRange = self.dateRange else { return nil }
-        guard let theirRange = otherItem.dateRange else { return nil }
+        guard let myRange = self.unlinkedDateRange else { return nil }
+        guard let theirRange = otherItem.unlinkedDateRange else { return nil }
 
         // items overlap?
         if let intersection = myRange.intersection(with: theirRange) { return -intersection.duration }
 
+        // self is earlier
         if myRange.end <= theirRange.start { return theirRange.start.timeIntervalSince(myRange.end) }
-        if myRange.start >= theirRange.end { return myRange.start.timeIntervalSince(theirRange.end) }
 
-        return nil
+        // other is earlier
+        return myRange.start.timeIntervalSince(theirRange.end)
     }
 
-    internal func edgeSample(with otherItem: TimelineItem) -> PersistentSample? {
+    internal func edgeSample(with otherItem: TimelineItem, requireEdgeLink: Bool = true, requireLocation: Bool = false) -> PersistentSample? {
+        // check for linked items first
         if otherItem == previousItem {
-            return samples.first
+            return requireLocation ? samplesMatchingDisabled.first(where: { $0.location != nil }) : samples.first
         }
         if otherItem == nextItem {
-            return samples.last
+            return requireLocation ? samplesMatchingDisabled.last(where: { $0.location != nil }) : samples.last
         }
-        return nil
+
+        // not allowed to fall back to non-linked?
+        if requireEdgeLink {
+            return nil
+        }
+
+        // need dates to know which item comes first
+        guard let myStart = startDate, let theirStart = otherItem.startDate else {
+            return nil
+        }
+
+        let edgeSamples = myStart < theirStart ? samplesMatchingDisabled.reversed() : samplesMatchingDisabled
+        return requireLocation
+            ? edgeSamples.first { $0.location != nil }
+            : edgeSamples.first
     }
 
     internal func secondToEdgeSample(with otherItem: TimelineItem) -> PersistentSample? {
-        if otherItem == previousItem { return samples.second }
-        if otherItem == nextItem { return samples.secondToLast }
+        if otherItem == previousItem { return samplesMatchingDisabled.second }
+        if otherItem == nextItem { return samplesMatchingDisabled.secondToLast }
         return nil
     }
 
