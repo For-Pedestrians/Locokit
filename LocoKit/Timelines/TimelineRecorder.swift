@@ -173,7 +173,7 @@ public class TimelineRecorder: ObservableObject {
         lastRecorded = Date()
 
         let sample = store.createSample(from: ActivityBrain.highlander.presentSample)
-        Task(priority: .background) { sample.updateRTree() }
+        Task.detached { await sample.updateRTree() }
 
         // make sure sleep mode doesn't happen prematurely
         updateSleepModeAcceptability()
@@ -233,7 +233,7 @@ public class TimelineRecorder: ObservableObject {
             if classifier.canClassify(sample.location?.coordinate) {
                 lastClassifierResults = classifier.classify(sample)
             }
-
+            
             // if activityType hasn't changed, reuse current
             if sample.activityType == currentItem.movingActivityType {
                 currentItem.add(sample)
