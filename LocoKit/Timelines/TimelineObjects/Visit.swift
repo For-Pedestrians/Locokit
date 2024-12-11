@@ -11,7 +11,7 @@ import CoreLocation
 
 open class Visit: TimelineItem {
 
-    public static var minimumKeeperDuration: TimeInterval = 60 * 5
+    public static var minimumKeeperDuration: TimeInterval = 60 * 2
     public static var minimumValidDuration: TimeInterval = 10
 
     public static var minimumRadius: CLLocationDistance = 10
