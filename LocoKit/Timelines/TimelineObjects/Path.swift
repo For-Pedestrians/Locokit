@@ -215,13 +215,18 @@ open class Path: TimelineItem, CustomStringConvertible {
         return visit.maximumMergeableDistance(from: self)
     }
 
-    private func maximumMergeableDistance(from otherPath: Path) -> CLLocationDistance {
-        guard let timeSeparation = self.timeInterval(from: otherPath) else {
+   private func maximumMergeableDistance(from otherPath: Path) -> CLLocationDistance {
+        guard let myEdge = self.edgeSample(with: otherPath, requireEdgeLink: false, requireLocation: true),
+              let theirEdge = otherPath.edgeSample(with: self, requireEdgeLink: false, requireLocation: true) else {
             return 0
         }
+
+        let timeSeparation = abs(myEdge.date.timeIntervalSince(theirEdge.date))
+
         let maxSpeed = max(self.speed, otherPath.speed)
         return CLLocationDistance(maxSpeed * timeSeparation * 50)
     }
+
 
     internal override func cleanseEdge(with otherPath: Path, excluding: Set<LocomotionSample>) -> LocomotionSample? {
         if self.isMergeLocked || otherPath.isMergeLocked { return nil }
